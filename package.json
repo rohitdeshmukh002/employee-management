@@ -1,0 +1,9 @@
+{
+  "name": "employee-management",
+  "private": true,
+  "scripts": {
+    "dev": "docker compose up --build",
+    "dev:down": "docker compose down",
+    "dev:clean": "docker compose down -v"
+  }
+}
