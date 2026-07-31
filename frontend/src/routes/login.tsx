@@ -1,28 +1,29 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getToken } from "@/lib/api";
+import { goToDashboard } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
-  beforeLoad: () => {
-    if (getToken()) {
-      throw redirect({ to: "/dashboard" });
-    }
-  },
   component: LoginPage,
 });
 
 function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      goToDashboard();
+    }
+  }, [isAuthenticated, isLoading]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -30,13 +31,20 @@ function LoginPage() {
     setError(null);
     try {
       await login(email, password);
-      window.location.href = "/dashboard";
-    } catch {
-      setError("Invalid credentials. Try admin@company.com or any email.");
-    } finally {
+      // login() already hard-redirects to /dashboard
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid email or password");
       setLoading(false);
     }
   };
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <AuthLayout title="Sign in" subtitle="Checking your session...">
+        <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -59,7 +67,7 @@ function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com"
+            placeholder="admin@company.com"
             required
           />
         </div>
@@ -79,12 +87,17 @@ function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={6}
           />
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
         </Button>
+        <p className="text-xs text-muted-foreground">
+          Demo: admin@company.com / Password123! or any seeded employee email with the same
+          password.
+        </p>
       </form>
     </AuthLayout>
   );
