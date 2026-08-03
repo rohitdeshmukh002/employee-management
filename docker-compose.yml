@@ -42,9 +42,10 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
+      # Mount whole app so TanStack can write routeTree.gen.ts on the same filesystem
+      - ./frontend:/app
+      # Keep image node_modules (don't use host folder)
+      - /app/node_modules
     depends_on:
       - backend
 
