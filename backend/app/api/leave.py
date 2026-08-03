@@ -25,6 +25,7 @@ def _to_read(record: LeaveRequest) -> LeaveRequestRead:
         start_date=record.start_date,
         end_date=record.end_date,
         reason=record.reason,
+        admin_note=record.admin_note or "",
         status=record.status,
         created_at=record.created_at,
     )
@@ -86,6 +87,7 @@ def update_leave_status(
             detail="Only pending requests can be updated",
         )
     record.status = payload.status
+    record.admin_note = payload.admin_note.strip()
     db.commit()
     db.refresh(record)
     return _to_read(record)

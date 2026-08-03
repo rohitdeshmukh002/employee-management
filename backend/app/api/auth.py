@@ -4,13 +4,11 @@ from sqlalchemy.orm import Session
 from app.core.security import (
     create_access_token,
     get_current_user,
-    hash_password,
     verify_password,
 )
 from app.database.session import get_db
-from app.models.employee import Employee
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
+from app.schemas.auth import LoginRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -31,34 +29,6 @@ def _token_for(user: User) -> TokenResponse:
         access_token=create_access_token(str(user.id)),
         user=_to_user_read(user),
     )
-
-
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == payload.email.lower()).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is already registered",
-        )
-
-    # Only link an employee if one already exists for this email.
-    # Never invent placeholder department/position/hire-date records.
-    employee = (
-        db.query(Employee).filter(Employee.email == payload.email.lower()).first()
-    )
-
-    user = User(
-        email=payload.email.lower(),
-        hashed_password=hash_password(payload.password),
-        full_name=payload.name.strip(),
-        role="employee",
-        employee_id=employee.id if employee else None,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return _token_for(user)
 
 
 @router.post("/login", response_model=TokenResponse)

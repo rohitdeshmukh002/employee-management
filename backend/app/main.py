@@ -9,15 +9,25 @@ from app.api.dashboard import router as dashboard_router
 from app.api.employees import router as employees_router
 from app.api.leave import router as leave_router
 from app.api.salary import router as salary_router
+from app.api.timesheets import router as timesheets_router
 from app.core.config import CORS_ORIGINS
+from app.database.ensure_schema import ensure_schema
 from app.database.seed import seed_if_empty
 from app.database.session import Base, SessionLocal, engine
-from app.models import attendance, employee, leave, user  # noqa: F401
+from app.models import (  # noqa: F401
+    attendance,
+    employee,
+    leave,
+    salary_payment,
+    timesheet,
+    user,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
     db = SessionLocal()
     try:
         seed_if_empty(db)
@@ -41,6 +51,7 @@ app.include_router(employees_router, prefix="/api")
 app.include_router(attendance_router, prefix="/api")
 app.include_router(leave_router, prefix="/api")
 app.include_router(salary_router, prefix="/api")
+app.include_router(timesheets_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 
 

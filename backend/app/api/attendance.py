@@ -4,12 +4,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.employees import require_linked_employee
+from app.core.config import is_within_office
 from app.core.security import get_current_user
 from app.database.session import get_db
 from app.models.attendance import Attendance
 from app.models.employee import Employee
 from app.models.user import User
-from app.schemas.attendance import AttendanceCheckInResponse, AttendanceRead
+from app.schemas.attendance import (
+    AttendanceCheckInResponse,
+    AttendanceLocationPayload,
+    AttendanceRead,
+)
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
@@ -30,6 +35,13 @@ def _to_read(record: Attendance, employee: Employee | None = None) -> Attendance
         check_in=record.check_in,
         check_out=record.check_out,
         status=record.status,
+        check_in_lat=record.check_in_lat,
+        check_in_lng=record.check_in_lng,
+        check_in_accuracy=record.check_in_accuracy,
+        is_office=record.is_office,
+        check_out_lat=record.check_out_lat,
+        check_out_lng=record.check_out_lng,
+        check_out_accuracy=record.check_out_accuracy,
         created_at=record.created_at,
     )
 
@@ -49,12 +61,16 @@ def list_attendance(
 
 @router.post("/check-in", response_model=AttendanceCheckInResponse)
 def check_in(
+    payload: AttendanceLocationPayload | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Check-in is allowed from anywhere. Geo is stored for admin clarity."""
+    payload = payload or AttendanceLocationPayload()
     employee_id = require_linked_employee(current_user)
     today = date.today()
     now = datetime.now().time().replace(microsecond=0)
+    office = is_within_office(payload.latitude, payload.longitude)
 
     record = (
         db.query(Attendance)
@@ -74,25 +90,43 @@ def check_in(
             date=today,
             check_in=now,
             status=status_label,
+            check_in_lat=payload.latitude,
+            check_in_lng=payload.longitude,
+            check_in_accuracy=payload.accuracy,
+            is_office=office,
         )
         db.add(record)
     else:
         record.check_in = now
         record.status = "late" if now >= time(10, 0) else "present"
+        record.check_in_lat = payload.latitude
+        record.check_in_lng = payload.longitude
+        record.check_in_accuracy = payload.accuracy
+        record.is_office = office
 
     db.commit()
     db.refresh(record)
+
+    location_note = (
+        " (office location)"
+        if office is True
+        else " (remote / outside preferred office)"
+        if office is False
+        else " (location unavailable)"
+    )
     return AttendanceCheckInResponse(
         record=_to_read(record),
-        message="Checked in successfully",
+        message=f"Checked in successfully{location_note}",
     )
 
 
 @router.post("/check-out", response_model=AttendanceCheckInResponse)
 def check_out(
+    payload: AttendanceLocationPayload | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    payload = payload or AttendanceLocationPayload()
     employee_id = require_linked_employee(current_user)
     today = date.today()
     now = datetime.now().time().replace(microsecond=0)
@@ -114,6 +148,9 @@ def check_out(
         )
 
     record.check_out = now
+    record.check_out_lat = payload.latitude
+    record.check_out_lng = payload.longitude
+    record.check_out_accuracy = payload.accuracy
     db.commit()
     db.refresh(record)
     return AttendanceCheckInResponse(
