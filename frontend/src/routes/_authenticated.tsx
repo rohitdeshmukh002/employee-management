@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
@@ -6,13 +6,16 @@ import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppSidebar, DRAWER_WIDTH } from "@/components/app-sidebar";
 import { getStoredUser, getToken } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: () => {
+    // localStorage is not available during SSR, so getToken() is always null there.
+    // Skipping the redirect on the server avoids a login ↔ dashboard loop.
+    if (typeof window === "undefined") return;
     if (!getToken()) {
       throw redirect({ to: "/login" });
     }
@@ -21,6 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 export function requireAdminRole() {
+  if (typeof window === "undefined") return;
   const user = getStoredUser();
   if (!user || user.role !== "admin") {
     throw redirect({ to: "/dashboard" });
@@ -28,7 +32,14 @@ export function requireAdminRole() {
 }
 
 function AuthenticatedLayout() {
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!getToken()) {
+      void navigate({ to: "/login" });
+    }
+  }, [navigate]);
 
   const drawer = <AppSidebar onNavigate={() => setMobileOpen(false)} />;
 

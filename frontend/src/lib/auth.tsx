@@ -41,6 +41,21 @@ interface TokenResponse {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Share one in-flight /auth/me so Strict Mode remounts don't double-hit the API. */
+let pendingMeRequest: Promise<AuthApiUser> | null = null;
+
+function fetchCurrentUser(): Promise<AuthApiUser> {
+  if (!pendingMeRequest) {
+    pendingMeRequest = api
+      .get<AuthApiUser>("/auth/me")
+      .then((res) => res.data)
+      .finally(() => {
+        pendingMeRequest = null;
+      });
+  }
+  return pendingMeRequest;
+}
+
 function mapUser(apiUser: AuthApiUser): User {
   return {
     id: apiUser.id,
@@ -53,45 +68,53 @@ function mapUser(apiUser: AuthApiUser): User {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Start false so SSR does not paint a permanent "Checking your session..." state.
+  const [isLoading, setIsLoading] = useState(false);
   const sessionEpoch = useRef(0);
 
   useEffect(() => {
+    let cancelled = false;
     const epoch = sessionEpoch.current;
+
     const bootstrap = async () => {
       const token = getToken();
       const stored = getStoredUser();
+
       if (!token) {
         clearAuthStorage();
-        if (sessionEpoch.current === epoch) {
+        if (!cancelled && sessionEpoch.current === epoch) {
           setUser(null);
           setIsLoading(false);
         }
         return;
       }
 
-      if (stored && sessionEpoch.current === epoch) {
-        setUser(stored);
+      if (!cancelled && sessionEpoch.current === epoch) {
+        setIsLoading(true);
+        if (stored) setUser(stored);
       }
 
       try {
-        const { data } = await api.get<AuthApiUser>("/auth/me");
-        if (sessionEpoch.current !== epoch) return;
+        const data = await fetchCurrentUser();
+        if (cancelled || sessionEpoch.current !== epoch) return;
         const mapped = mapUser(data);
         setUser(mapped);
         setStoredUser(mapped);
       } catch {
-        if (sessionEpoch.current !== epoch) return;
+        if (cancelled || sessionEpoch.current !== epoch) return;
         clearAuthStorage();
         setUser(null);
       } finally {
-        if (sessionEpoch.current === epoch) {
+        if (!cancelled && sessionEpoch.current === epoch) {
           setIsLoading(false);
         }
       }
     };
 
     void bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const persistSession = (payload: TokenResponse) => {

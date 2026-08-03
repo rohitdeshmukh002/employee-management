@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -13,7 +14,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { api, getApiErrorMessage } from "@/lib/api";
@@ -33,34 +34,25 @@ export const Route = createFileRoute("/_authenticated/attendance")({
 });
 
 function AttendancePage() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<AttendanceRecord[]>("/attendance")
-      .then((res) => {
-        setRecords(res.data);
-        setError(null);
-      })
-      .catch((err) => setError(getApiErrorMessage(err, "Failed to load attendance")))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const {
+    data: records = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["attendance"],
+    queryFn: async () => (await api.get<AttendanceRecord[]>("/attendance")).data,
+  });
 
   const runAction = async (path: "/attendance/check-in" | "/attendance/check-out") => {
     setBusy(true);
     setActionError(null);
     try {
       await api.post(path);
-      load();
+      await queryClient.invalidateQueries({ queryKey: ["attendance"] });
     } catch (err) {
       setActionError(getApiErrorMessage(err, "Action failed"));
     } finally {
@@ -98,7 +90,7 @@ function AttendancePage() {
           {actionError}
         </Alert>
       )}
-      {loading && (
+      {isLoading && (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}>
           <CircularProgress size={22} />
           <Typography variant="body2" color="text.secondary">
@@ -106,9 +98,11 @@ function AttendancePage() {
           </Typography>
         </Box>
       )}
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && (
+        <Alert severity="error">{getApiErrorMessage(error, "Failed to load attendance")}</Alert>
+      )}
 
-      {!loading && !error && (
+      {!isLoading && !error && (
         <TableContainer component={Paper} variant="outlined">
           <Table>
             <TableHead>

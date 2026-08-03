@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -21,7 +22,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { api, getApiErrorMessage } from "@/lib/api";
@@ -45,31 +46,23 @@ export const Route = createFileRoute("/_authenticated/leave")({
 function LeavePage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const [records, setRecords] = useState<LeaveRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [leaveType, setLeaveType] = useState("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
 
-  const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<LeaveRecord[]>("/leave")
-      .then((res) => {
-        setRecords(res.data);
-        setError(null);
-      })
-      .catch((err) => setError(getApiErrorMessage(err, "Failed to load leave requests")))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const {
+    data: records = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["leave"],
+    queryFn: async () => (await api.get<LeaveRecord[]>("/leave")).data,
+  });
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -83,7 +76,7 @@ function LeavePage() {
         reason,
       });
       setReason("");
-      load();
+      await queryClient.invalidateQueries({ queryKey: ["leave"] });
     } catch (err) {
       setFormError(getApiErrorMessage(err, "Unable to submit leave request"));
     } finally {
@@ -93,10 +86,11 @@ function LeavePage() {
 
   const updateStatus = async (id: number, status: "approved" | "rejected") => {
     try {
+      setActionError(null);
       await api.patch(`/leave/${id}`, { status });
-      load();
+      await queryClient.invalidateQueries({ queryKey: ["leave"] });
     } catch (err) {
-      setError(getApiErrorMessage(err, "Unable to update leave request"));
+      setActionError(getApiErrorMessage(err, "Unable to update leave request"));
     }
   };
 
@@ -174,7 +168,7 @@ function LeavePage() {
         </Card>
       )}
 
-      {loading && (
+      {isLoading && (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <CircularProgress size={22} />
           <Typography variant="body2" color="text.secondary">
@@ -182,9 +176,13 @@ function LeavePage() {
           </Typography>
         </Box>
       )}
-      {error && <Alert severity="error">{error}</Alert>}
+      {(error || actionError) && (
+        <Alert severity="error">
+          {actionError ?? getApiErrorMessage(error, "Failed to load leave requests")}
+        </Alert>
+      )}
 
-      {!loading && !error && (
+      {!isLoading && !error && (
         <TableContainer component={Paper} variant="outlined">
           <Table>
             <TableHead>

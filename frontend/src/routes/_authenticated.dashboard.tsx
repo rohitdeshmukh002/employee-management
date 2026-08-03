@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
@@ -11,7 +12,6 @@ import CardContent from "@mui/material/CardContent";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { api, getApiErrorMessage } from "@/lib/api";
@@ -37,15 +37,10 @@ type StatCard = {
 
 function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .get<DashboardStats>("/dashboard/stats")
-      .then((res) => setStats(res.data))
-      .catch((err) => setError(getApiErrorMessage(err, "Failed to load dashboard")));
-  }, []);
+  const { data: stats, error } = useQuery({
+    queryKey: ["dashboard", "stats"],
+    queryFn: async () => (await api.get<DashboardStats>("/dashboard/stats")).data,
+  });
 
   const cards: StatCard[] = [
     {
@@ -82,7 +77,7 @@ function DashboardPage() {
       />
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+          {getApiErrorMessage(error, "Failed to load dashboard")}
         </Alert>
       )}
       <Grid container spacing={2.5}>

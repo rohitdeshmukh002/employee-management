@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -10,7 +11,6 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
-import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { api, getApiErrorMessage } from "@/lib/api";
@@ -35,24 +35,14 @@ export const Route = createFileRoute("/_authenticated/employees")({
 });
 
 function EmployeesPage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .get<Employee[]>("/employees")
-      .then((response) => {
-        setEmployees(response.data);
-        setError(null);
-      })
-      .catch((err) => {
-        setError(getApiErrorMessage(err, "Failed to load employees"));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+  const {
+    data: employees = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["employees"],
+    queryFn: async () => (await api.get<Employee[]>("/employees")).data,
+  });
 
   return (
     <Box>
@@ -61,7 +51,7 @@ function EmployeesPage() {
         description="Manage your team directory. Data is loaded from PostgreSQL via the FastAPI backend."
       />
 
-      {loading && (
+      {isLoading && (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}>
           <CircularProgress size={22} />
           <Typography variant="body2" color="text.secondary">
@@ -69,9 +59,11 @@ function EmployeesPage() {
           </Typography>
         </Box>
       )}
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && (
+        <Alert severity="error">{getApiErrorMessage(error, "Failed to load employees")}</Alert>
+      )}
 
-      {!loading && !error && (
+      {!isLoading && !error && (
         <TableContainer component={Paper} variant="outlined">
           <Table>
             <TableHead>

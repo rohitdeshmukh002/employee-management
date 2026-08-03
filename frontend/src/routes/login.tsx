@@ -85,11 +85,20 @@ function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@company.com"
+            placeholder="admin@gmail.com"
             required
             autoComplete="email"
           />
           <Box>
+            <TextField
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              inputProps={{ minLength: 6 }}
+              autoComplete="current-password"
+            />
             <Stack direction="row" sx={{ justifyContent: "flex-end", mb: 0.5 }}>
               <LinkMui
                 component={Link}
@@ -101,24 +110,11 @@ function LoginPage() {
                 Forgot password?
               </LinkMui>
             </Stack>
-            <TextField
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              inputProps={{ minLength: 6 }}
-              autoComplete="current-password"
-            />
           </Box>
           {error && <Alert severity="error">{error}</Alert>}
           <Button type="submit" variant="contained" size="large" disabled={loading} fullWidth>
             {loading ? "Signing in..." : "Sign in"}
           </Button>
-          <Typography variant="caption" color="text.secondary">
-            Demo: admin@company.com / Password123! or any seeded employee email with the same
-            password.
-          </Typography>
         </Stack>
       </Box>
     </AuthLayout>

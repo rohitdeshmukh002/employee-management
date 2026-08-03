@@ -20,6 +20,19 @@ export default defineConfig({
     server: {
       host: "0.0.0.0",
       port: 5173,
+      // Docker Desktop on Windows does not reliably forward native file events
+      // into the container — polling makes HMR see host edits.
+      watch: {
+        usePolling: true,
+        interval: 500,
+        ignored: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/.tanstack/**",
+          "**/routeTree.gen.ts",
+          "**/.output/**",
+        ],
+      },
       proxy: {
         "/api": {
           target: apiProxyTarget,

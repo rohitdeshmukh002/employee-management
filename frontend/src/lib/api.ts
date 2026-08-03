@@ -59,7 +59,8 @@ export function clearAuthStorage() {
 
 export function goToDashboard() {
   if (typeof window === "undefined") return;
-  window.location.assign("/dashboard");
+  // Client-side navigation avoids a full document reload that re-runs SSR auth checks.
+  window.location.replace("/dashboard");
 }
 
 api.interceptors.request.use((config) => {

@@ -1,5 +1,3 @@
-from datetime import date
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -44,31 +42,18 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
             detail="Email is already registered",
         )
 
+    # Only link an employee if one already exists for this email.
+    # Never invent placeholder department/position/hire-date records.
     employee = (
         db.query(Employee).filter(Employee.email == payload.email.lower()).first()
     )
-    if employee is None:
-        parts = payload.name.strip().split(None, 1)
-        first_name = parts[0]
-        last_name = parts[1] if len(parts) > 1 else "Employee"
-        employee = Employee(
-            first_name=first_name,
-            last_name=last_name,
-            email=payload.email.lower(),
-            department="General",
-            position="Staff",
-            salary=None,
-            hire_date=date.today(),
-        )
-        db.add(employee)
-        db.flush()
 
     user = User(
         email=payload.email.lower(),
         hashed_password=hash_password(payload.password),
         full_name=payload.name.strip(),
         role="employee",
-        employee_id=employee.id,
+        employee_id=employee.id if employee else None,
     )
     db.add(user)
     db.commit()

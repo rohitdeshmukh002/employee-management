@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -7,7 +8,7 @@ import Chip from "@mui/material/Chip";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { api, getApiErrorMessage } from "@/lib/api";
@@ -41,16 +42,14 @@ function ProfileField({ label, value }: { label: string; value: ReactNode }) {
 
 function ProfilePage() {
   const { user } = useAuth();
-  const [employee, setEmployee] = useState<EmployeeProfile | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user?.employee_id) return;
-    api
-      .get<EmployeeProfile>("/employees/me")
-      .then((res) => setEmployee(res.data))
-      .catch((err) => setError(getApiErrorMessage(err, "Failed to load profile")));
-  }, [user?.employee_id]);
+  const {
+    data: employee,
+    error,
+  } = useQuery({
+    queryKey: ["employees", "me"],
+    queryFn: async () => (await api.get<EmployeeProfile>("/employees/me")).data,
+    enabled: user?.employee_id != null,
+  });
 
   return (
     <Box>
@@ -87,10 +86,15 @@ function ProfilePage() {
                 <Typography variant="h6">Employee record</Typography>
                 {!user?.employee_id && (
                   <Typography variant="body2" color="text.secondary">
-                    This account is not linked to an employee record (typical for portal admins).
+                    This account is not linked to an employee record. An admin must create your
+                    employee profile and link it to this account.
                   </Typography>
                 )}
-                {error && <Alert severity="error">{error}</Alert>}
+                {error && (
+                  <Alert severity="error">
+                    {getApiErrorMessage(error, "Failed to load profile")}
+                  </Alert>
+                )}
                 {employee && (
                   <>
                     <ProfileField
