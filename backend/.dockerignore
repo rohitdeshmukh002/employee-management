@@ -1,4 +1,36 @@
+# Virtualenvs & caches
 venv
+.venv
 __pycache__
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.egg-info
+.eggs
+dist
+build
+
+# Git / IDE
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+
+# Env & secrets
 .env
+.env.*
+!.env.example
+
+# Docs & misc
+*.md
+.DS_Store
+Thumbs.db
+
+# Docker / CI
+Dockerfile*
+docker-compose*
+.dockerignore
+.github

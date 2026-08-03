@@ -1,3 +1,48 @@
+# Dependencies & build output
 node_modules
 dist
+.output
+.vinxi
+.nitro
+.tanstack
+.wrangler
+
+# Git / IDE
 .git
+.gitignore
+.cursor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Docs & misc
+*.md
+!README.md
+LICENSE
+.editorconfig
+.prettierrc
+.prettierignore
+.eslintrc*
+eslint.config.*
+
+# Tests & coverage
+coverage
+**/__tests__
+**/*.test.*
+**/*.spec.*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Docker / CI
+Dockerfile*
+docker-compose*
+.dockerignore
+.github

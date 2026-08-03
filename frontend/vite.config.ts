@@ -12,6 +12,10 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  // Node server output for Docker / self-hosted deploys (Lovable still forces Cloudflare in its builds).
+  nitro: {
+    preset: "node-server",
+  },
   vite: {
     server: {
       host: "0.0.0.0",
