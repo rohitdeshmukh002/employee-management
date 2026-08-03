@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import Date, DateTime, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
 
@@ -20,3 +20,7 @@ class Employee(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )
+
+    user = relationship("User", back_populates="employee", uselist=False)
+    attendance_records = relationship("Attendance", back_populates="employee")
+    leave_requests = relationship("LeaveRequest", back_populates="employee")

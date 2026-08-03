@@ -1,39 +1,51 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getToken } from "@/lib/api";
+import { goToDashboard } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/register")({
-  beforeLoad: () => {
-    if (getToken()) {
-      throw redirect({ to: "/dashboard" });
-    }
-  },
   component: RegisterPage,
 });
 
 function RegisterPage() {
-  const { register } = useAuth();
+  const { register, isAuthenticated, isLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      goToDashboard();
+    }
+  }, [isAuthenticated, isLoading]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       await register(name, email, password);
-      window.location.href = "/dashboard";
-    } finally {
+      // register() already hard-redirects to /dashboard
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to create account");
       setLoading(false);
     }
   };
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <AuthLayout title="Create account" subtitle="Checking your session...">
+        <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -57,6 +69,7 @@ function RegisterPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Jane Doe"
             required
+            minLength={2}
           />
         </div>
         <div className="space-y-2">
@@ -78,8 +91,10 @@ function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={6}
           />
         </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Creating account..." : "Create account"}
         </Button>

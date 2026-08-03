@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { getToken } from "@/lib/api";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { getStoredUser, getToken } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: () => {
@@ -13,6 +13,13 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: AuthenticatedLayout,
 });
+
+export function requireAdminRole() {
+  const user = getStoredUser();
+  if (!user || user.role !== "admin") {
+    throw redirect({ to: "/dashboard" });
+  }
+}
 
 function AuthenticatedLayout() {
   return (

@@ -22,7 +22,7 @@ function ForgotPasswordPage() {
   return (
     <AuthLayout
       title="Reset password"
-      subtitle="Enter your email and we'll send reset instructions."
+      subtitle="Password reset email delivery is not configured yet."
       footer={
         <Link to="/login" className="text-primary underline-offset-4 hover:underline">
           Back to sign in
@@ -31,7 +31,8 @@ function ForgotPasswordPage() {
     >
       {sent ? (
         <p className="text-sm text-muted-foreground">
-          If an account exists for {email}, you&apos;ll receive reset instructions shortly.
+          If an account exists for {email}, contact your administrator to reset the password.
+          Demo accounts use <span className="font-medium">Password123!</span>
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -47,7 +48,7 @@ function ForgotPasswordPage() {
             />
           </div>
           <Button type="submit" className="w-full">
-            Send reset link
+            Request reset help
           </Button>
         </form>
       )}

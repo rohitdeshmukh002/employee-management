@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api } from "@/lib/api";
+import { api, getApiErrorMessage } from "@/lib/api";
+import { requireAdminRole } from "@/routes/_authenticated";
 
 type Employee = {
   id: number;
@@ -24,6 +25,9 @@ type Employee = {
 };
 
 export const Route = createFileRoute("/_authenticated/employees")({
+  beforeLoad: () => {
+    requireAdminRole();
+  },
   component: EmployeesPage,
 });
 
@@ -39,8 +43,8 @@ function EmployeesPage() {
         setEmployees(response.data);
         setError(null);
       })
-      .catch((err: Error) => {
-        setError(err.message || "Failed to load employees");
+      .catch((err) => {
+        setError(getApiErrorMessage(err, "Failed to load employees"));
       })
       .finally(() => {
         setLoading(false);
@@ -55,7 +59,7 @@ function EmployeesPage() {
       />
 
       {loading && <p className="text-sm text-muted-foreground">Loading employees...</p>}
-      {error && <p className="text-sm text-destructive">Failed to load employees: {error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {!loading && !error && (
         <div className="rounded-lg border">
@@ -80,7 +84,7 @@ function EmployeesPage() {
                   <TableCell>{employee.department}</TableCell>
                   <TableCell>{employee.position}</TableCell>
                   <TableCell>
-                    {employee.salary != null ? `$${employee.salary.toLocaleString()}` : "—"}
+                    {employee.salary != null ? `$${Number(employee.salary).toLocaleString()}` : "—"}
                   </TableCell>
                   <TableCell>{employee.hire_date}</TableCell>
                 </TableRow>
