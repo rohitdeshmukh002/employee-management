@@ -1,27 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import FormControl from "@mui/material/FormControl";
+import Grid from "@mui/material/Grid";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Paper from "@mui/material/Paper";
+import Select from "@mui/material/Select";
+import Stack from "@mui/material/Stack";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -99,120 +101,156 @@ function LeavePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       <PageHeader title="Leave" description="Request and manage time off." />
 
       {user?.employee_id != null && (
         <Card>
-          <CardHeader>
-            <CardTitle>Request leave</CardTitle>
-          </CardHeader>
           <CardContent>
-            <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select value={leaveType} onValueChange={setLeaveType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Leave type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="annual">Annual</SelectItem>
-                    <SelectItem value="sick">Sick</SelectItem>
-                    <SelectItem value="personal">Personal</SelectItem>
-                    <SelectItem value="unpaid">Unpaid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="reason">Reason</Label>
-                <Textarea
-                  id="reason"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Optional note"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="start">Start date</Label>
-                <Input
-                  id="start"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end">End date</Label>
-                <Input
-                  id="end"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                />
-              </div>
-              {formError && <p className="text-sm text-destructive sm:col-span-2">{formError}</p>}
-              <div className="sm:col-span-2">
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Submitting..." : "Submit request"}
-                </Button>
-              </div>
-            </form>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Request leave
+            </Typography>
+            <Box component="form" onSubmit={submit}>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="leave-type-label">Type</InputLabel>
+                    <Select
+                      labelId="leave-type-label"
+                      label="Type"
+                      value={leaveType}
+                      onChange={(e) => setLeaveType(e.target.value)}
+                    >
+                      <MenuItem value="annual">Annual</MenuItem>
+                      <MenuItem value="sick">Sick</MenuItem>
+                      <MenuItem value="personal">Personal</MenuItem>
+                      <MenuItem value="unpaid">Unpaid</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Start date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="End date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    label="Reason"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Optional note"
+                    multiline
+                    minRows={3}
+                  />
+                </Grid>
+                {formError && (
+                  <Grid size={{ xs: 12 }}>
+                    <Alert severity="error">{formError}</Alert>
+                  </Grid>
+                )}
+                <Grid size={{ xs: 12 }}>
+                  <Button type="submit" variant="contained" disabled={submitting}>
+                    {submitting ? "Submitting..." : "Submit request"}
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
           </CardContent>
         </Card>
       )}
 
-      {loading && <p className="text-sm text-muted-foreground">Loading leave requests...</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {loading && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <CircularProgress size={22} />
+          <Typography variant="body2" color="text.secondary">
+            Loading leave requests...
+          </Typography>
+        </Box>
+      )}
+      {error && <Alert severity="error">{error}</Alert>}
 
       {!loading && !error && (
-        <div className="rounded-lg border">
+        <TableContainer component={Paper} variant="outlined">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Dates</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reason</TableHead>
-                {isAdmin && <TableHead>Actions</TableHead>}
+                <TableCell>Employee</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Dates</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Reason</TableCell>
+                {isAdmin && <TableCell>Actions</TableCell>}
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 6 : 5} className="text-muted-foreground">
-                    No leave requests yet.
+                  <TableCell colSpan={isAdmin ? 6 : 5}>
+                    <Typography variant="body2" color="text.secondary">
+                      No leave requests yet.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 records.map((record) => (
-                  <TableRow key={record.id}>
+                  <TableRow key={record.id} hover>
                     <TableCell>
                       {record.employee_name ?? `Employee #${record.employee_id}`}
                     </TableCell>
-                    <TableCell className="capitalize">{record.leave_type}</TableCell>
+                    <TableCell sx={{ textTransform: "capitalize" }}>{record.leave_type}</TableCell>
                     <TableCell>
                       {record.start_date} → {record.end_date}
                     </TableCell>
-                    <TableCell className="capitalize">{record.status}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={record.status}
+                        size="small"
+                        color={
+                          record.status === "approved"
+                            ? "success"
+                            : record.status === "rejected"
+                              ? "error"
+                              : "default"
+                        }
+                        sx={{ textTransform: "capitalize" }}
+                      />
+                    </TableCell>
                     <TableCell>{record.reason || "—"}</TableCell>
                     {isAdmin && (
                       <TableCell>
                         {record.status === "pending" ? (
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => void updateStatus(record.id, "approved")}>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              onClick={() => void updateStatus(record.id, "approved")}
+                            >
                               Approve
                             </Button>
                             <Button
-                              size="sm"
-                              variant="outline"
+                              size="small"
+                              variant="outlined"
+                              color="error"
                               onClick={() => void updateStatus(record.id, "rejected")}
                             >
                               Reject
                             </Button>
-                          </div>
+                          </Stack>
                         ) : (
                           "—"
                         )}
@@ -223,8 +261,8 @@ function LeavePage() {
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableContainer>
       )}
-    </div>
+    </Stack>
   );
 }

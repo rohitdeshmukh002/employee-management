@@ -1,10 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import LinkMui from "@mui/material/Link";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useEffect, useState } from "react";
 
 import { AuthLayout } from "@/components/auth-layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { goToDashboard } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -32,17 +37,31 @@ function RegisterPage() {
     setError(null);
     try {
       await register(name, email, password);
-      // register() already hard-redirects to /dashboard
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create account");
       setLoading(false);
     }
   };
 
-  if (isLoading || isAuthenticated) {
+  if (isLoading) {
     return (
       <AuthLayout title="Create account" subtitle="Checking your session...">
-        <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+        <Stack spacing={2} sx={{ alignItems: "center", py: 4 }}>
+          <CircularProgress size={28} />
+          <Typography variant="body2" color="text.secondary">
+            Please wait...
+          </Typography>
+        </Stack>
+      </AuthLayout>
+    );
+  }
+
+  if (isAuthenticated) {
+    return (
+      <AuthLayout title="Create account" subtitle="You are already signed in.">
+        <Typography variant="body2" color="text.secondary">
+          Redirecting to dashboard...
+        </Typography>
       </AuthLayout>
     );
   }
@@ -54,51 +73,47 @@ function RegisterPage() {
       footer={
         <>
           Already have an account?{" "}
-          <Link to="/login" className="text-primary underline-offset-4 hover:underline">
+          <LinkMui component={Link} to="/login" underline="hover" fontWeight={600}>
             Sign in
-          </Link>
+          </LinkMui>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Full name</Label>
-          <Input
-            id="name"
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={2.5}>
+          <TextField
+            label="Full name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Jane Doe"
             required
-            minLength={2}
+            inputProps={{ minLength: 2 }}
+            autoComplete="name"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
+          <TextField
+            label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
             required
+            autoComplete="email"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
+          <TextField
+            label="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
+            inputProps={{ minLength: 6 }}
+            autoComplete="new-password"
           />
-        </div>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Creating account..." : "Create account"}
-        </Button>
-      </form>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Button type="submit" variant="contained" size="large" disabled={loading} fullWidth>
+            {loading ? "Creating account..." : "Create account"}
+          </Button>
+        </Stack>
+      </Box>
     </AuthLayout>
   );
 }

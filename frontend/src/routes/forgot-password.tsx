@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import LinkMui from "@mui/material/Link";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useState } from "react";
 
 import { AuthLayout } from "@/components/auth-layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
@@ -24,33 +27,33 @@ function ForgotPasswordPage() {
       title="Reset password"
       subtitle="Password reset email delivery is not configured yet."
       footer={
-        <Link to="/login" className="text-primary underline-offset-4 hover:underline">
+        <LinkMui component={Link} to="/login" underline="hover" fontWeight={600}>
           Back to sign in
-        </Link>
+        </LinkMui>
       }
     >
       {sent ? (
-        <p className="text-sm text-muted-foreground">
-          If an account exists for {email}, contact your administrator to reset the password.
-          Demo accounts use <span className="font-medium">Password123!</span>
-        </p>
+        <Typography variant="body2" color="text.secondary">
+          If an account exists for {email}, contact your administrator to reset the password. Demo
+          accounts use <strong>Password123!</strong>
+        </Typography>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
+        <Box component="form" onSubmit={handleSubmit}>
+          <Stack spacing={2.5}>
+            <TextField
+              label="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
               required
+              autoComplete="email"
             />
-          </div>
-          <Button type="submit" className="w-full">
-            Request reset help
-          </Button>
-        </form>
+            <Button type="submit" variant="contained" size="large" fullWidth>
+              Request reset help
+            </Button>
+          </Stack>
+        </Box>
       )}
     </AuthLayout>
   );

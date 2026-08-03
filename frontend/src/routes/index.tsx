@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import { useEffect } from "react";
 
 import { goToDashboard } from "@/lib/api";
@@ -21,8 +24,11 @@ function HomeRedirect() {
   }, [isAuthenticated, isLoading]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-      Loading...
-    </div>
+    <Stack sx={{ minHeight: "100vh", alignItems: "center", justifyContent: "center" }} spacing={2}>
+      <CircularProgress size={28} />
+      <Typography variant="body2" color="text.secondary">
+        Loading...
+      </Typography>
+    </Stack>
   );
 }

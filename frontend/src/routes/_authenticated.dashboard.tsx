@@ -1,9 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarClock, CalendarDays, Users, Wallet } from "lucide-react";
+import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
+import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
+import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
+import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded";
+import type { SvgIconComponent } from "@mui/icons-material";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Grid from "@mui/material/Grid";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -18,6 +28,13 @@ type DashboardStats = {
   pending_leave: number;
 };
 
+type StatCard = {
+  title: string;
+  value: number | string;
+  icon: SvgIconComponent;
+  tint: string;
+};
+
 function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -30,35 +47,83 @@ function DashboardPage() {
       .catch((err) => setError(getApiErrorMessage(err, "Failed to load dashboard")));
   }, []);
 
-  const cards = [
-    { title: "Team members", value: stats?.team_members ?? "—", icon: Users },
-    { title: "Present today", value: stats?.present_today ?? "—", icon: CalendarClock },
-    { title: "On leave", value: stats?.on_leave ?? "—", icon: CalendarDays },
-    { title: "Pending leave", value: stats?.pending_leave ?? "—", icon: Wallet },
+  const cards: StatCard[] = [
+    {
+      title: "Team members",
+      value: stats?.team_members ?? "—",
+      icon: PeopleAltRoundedIcon,
+      tint: "rgba(15, 118, 110, 0.12)",
+    },
+    {
+      title: "Present today",
+      value: stats?.present_today ?? "—",
+      icon: EventAvailableRoundedIcon,
+      tint: "rgba(30, 58, 95, 0.12)",
+    },
+    {
+      title: "On leave",
+      value: stats?.on_leave ?? "—",
+      icon: CalendarMonthRoundedIcon,
+      tint: "rgba(217, 119, 6, 0.12)",
+    },
+    {
+      title: "Pending leave",
+      value: stats?.pending_leave ?? "—",
+      icon: PendingActionsRoundedIcon,
+      tint: "rgba(220, 38, 38, 0.1)",
+    },
   ];
 
   return (
-    <div>
+    <Box>
       <PageHeader
         title={`Welcome back, ${user?.name ?? "there"}`}
         description="Overview of your workforce at a glance."
       />
-      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="font-heading text-2xl font-semibold">{stat.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      <Grid container spacing={2.5}>
+        {cards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Grid key={stat.title} size={{ xs: 12, sm: 6, xl: 3 }}>
+              <Card>
+                <CardContent>
+                  <Stack
+                    direction="row"
+                    sx={{ justifyContent: "space-between", alignItems: "flex-start" }}
+                  >
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        {stat.title}
+                      </Typography>
+                      <Typography variant="h4" sx={{ mt: 1 }}>
+                        {stat.value}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 2,
+                        display: "grid",
+                        placeItems: "center",
+                        bgcolor: stat.tint,
+                        color: "primary.main",
+                      }}
+                    >
+                      <Icon />
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
+    </Box>
   );
 }

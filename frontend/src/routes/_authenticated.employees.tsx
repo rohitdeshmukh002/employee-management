@@ -1,15 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { requireAdminRole } from "@/routes/_authenticated";
 
@@ -52,31 +55,38 @@ function EmployeesPage() {
   }, []);
 
   return (
-    <div>
+    <Box>
       <PageHeader
         title="Employees"
         description="Manage your team directory. Data is loaded from PostgreSQL via the FastAPI backend."
       />
 
-      {loading && <p className="text-sm text-muted-foreground">Loading employees...</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {loading && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}>
+          <CircularProgress size={22} />
+          <Typography variant="body2" color="text.secondary">
+            Loading employees...
+          </Typography>
+        </Box>
+      )}
+      {error && <Alert severity="error">{error}</Alert>}
 
       {!loading && !error && (
-        <div className="rounded-lg border">
+        <TableContainer component={Paper} variant="outlined">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Salary</TableHead>
-                <TableHead>Hire Date</TableHead>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Department</TableCell>
+                <TableCell>Position</TableCell>
+                <TableCell>Salary</TableCell>
+                <TableCell>Hire Date</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {employees.map((employee) => (
-                <TableRow key={employee.id}>
+                <TableRow key={employee.id} hover>
                   <TableCell>
                     {employee.first_name} {employee.last_name}
                   </TableCell>
@@ -91,8 +101,8 @@ function EmployeesPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </TableContainer>
       )}
-    </div>
+    </Box>
   );
 }

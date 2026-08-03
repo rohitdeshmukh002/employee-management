@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 
 export function PageHeader({
   title,
@@ -10,12 +13,26 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
-      </div>
+    <Stack
+      direction={{ xs: "column", sm: "row" }}
+      spacing={2}
+      sx={{
+        mb: 3,
+        alignItems: { sm: "flex-start" },
+        justifyContent: "space-between",
+      }}
+    >
+      <Box>
+        <Typography variant="h4" component="h1">
+          {title}
+        </Typography>
+        {description && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+            {description}
+          </Typography>
+        )}
+      </Box>
       {action}
-    </div>
+    </Stack>
   );
 }
