@@ -158,7 +158,11 @@ function AttendancePage() {
                     <TableCell>{record.check_in ?? "—"}</TableCell>
                     <TableCell>{record.check_out ?? "—"}</TableCell>
                     <TableCell>
-                      <Chip label={record.status} size="small" sx={{ textTransform: "capitalize" }} />
+                      <Chip
+                        label={record.status}
+                        size="small"
+                        sx={{ textTransform: "capitalize" }}
+                      />
                     </TableCell>
                     <TableCell>
                       {record.is_office === true ? (

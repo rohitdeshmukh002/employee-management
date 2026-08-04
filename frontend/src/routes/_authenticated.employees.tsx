@@ -291,7 +291,12 @@ function EmployeesPage() {
             Copy these details and email them to the employee. They are shown only once here.
           </Typography>
           <Stack spacing={1.5}>
-            <TextField label="Login email" value={credentials?.login_email ?? ""} fullWidth InputProps={{ readOnly: true }} />
+            <TextField
+              label="Login email"
+              value={credentials?.login_email ?? ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
             <TextField
               label="Temporary password"
               value={credentials?.temporary_password ?? ""}
