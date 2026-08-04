@@ -122,9 +122,7 @@ function DashboardPage() {
       <PageHeader
         title={`Welcome back, ${user?.name ?? "there"}`}
         description={
-          isAdmin
-            ? "Who is in today and who is on leave."
-            : "Your attendance and leave snapshot."
+          isAdmin ? "Who is in today and who is on leave." : "Your attendance and leave snapshot."
         }
       />
       {error && (

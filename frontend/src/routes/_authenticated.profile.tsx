@@ -52,10 +52,7 @@ function ProfilePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    data: employee,
-    error: loadError,
-  } = useQuery({
+  const { data: employee, error: loadError } = useQuery({
     queryKey: ["employees", "me"],
     queryFn: async () => (await api.get<EmployeeProfile>("/employees/me")).data,
     enabled: user?.employee_id != null,
@@ -159,7 +156,11 @@ function ProfilePage() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
-                    <TextField label="Email" value={employee.email} InputProps={{ readOnly: true }} />
+                    <TextField
+                      label="Email"
+                      value={employee.email}
+                      InputProps={{ readOnly: true }}
+                    />
                     <ProfileField label="Department" value={employee.department} />
                     <ProfileField label="Position" value={employee.position} />
                     <ProfileField label="Hire date" value={employee.hire_date} />

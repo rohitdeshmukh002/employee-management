@@ -101,11 +101,7 @@ function LeavePage() {
     }
   };
 
-  const updateStatus = async (
-    id: number,
-    status: "approved" | "rejected",
-    admin_note = "",
-  ) => {
+  const updateStatus = async (id: number, status: "approved" | "rejected", admin_note = "") => {
     try {
       setActionError(null);
       await api.patch(`/leave/${id}`, { status, admin_note });

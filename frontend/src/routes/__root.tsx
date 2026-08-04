@@ -32,7 +32,9 @@ function NotFoundComponent() {
       }}
     >
       <Typography variant="h3">404</Typography>
-      <Typography color="text.secondary">The page you&apos;re looking for doesn&apos;t exist.</Typography>
+      <Typography color="text.secondary">
+        The page you&apos;re looking for doesn&apos;t exist.
+      </Typography>
       <Button component={Link} to="/" variant="contained">
         Go home
       </Button>

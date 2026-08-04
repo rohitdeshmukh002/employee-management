@@ -96,7 +96,11 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
             <Typography variant="body2" fontWeight={600} noWrap>
               {user?.name}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: "capitalize" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textTransform: "capitalize" }}
+            >
               {user?.role}
             </Typography>
           </Box>

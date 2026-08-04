@@ -57,20 +57,7 @@ type Employee = {
   last_name: string;
 };
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export const Route = createFileRoute("/_authenticated/salary")({
   component: SalaryPage,
@@ -317,7 +304,11 @@ function SalaryPage() {
                           </Button>
                         )}
                         {isAdmin && (
-                          <Button size="small" variant="outlined" onClick={() => onPickPayslip(row.id)}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => onPickPayslip(row.id)}
+                          >
                             Upload
                           </Button>
                         )}
