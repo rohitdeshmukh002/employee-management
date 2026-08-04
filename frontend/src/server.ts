@@ -7,6 +7,10 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
+/** Backend origin for production /api proxy (Vite proxy only works in dev). */
+const API_PROXY_TARGET =
+  process.env.API_PROXY_TARGET ?? process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000";
+
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
@@ -14,6 +18,35 @@ async function getServerEntry(): Promise<ServerEntry> {
     );
   }
   return serverEntryPromise;
+}
+
+async function proxyApiRequest(request: Request): Promise<Response> {
+  const incoming = new URL(request.url);
+  const target = new URL(incoming.pathname + incoming.search, API_PROXY_TARGET);
+
+  const headers = new Headers(request.headers);
+  headers.delete("host");
+
+  const init: RequestInit & { duplex?: "half" } = {
+    method: request.method,
+    headers,
+    redirect: "manual",
+  };
+
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    init.body = request.body;
+    init.duplex = "half";
+  }
+
+  try {
+    return await fetch(target, init);
+  } catch (error) {
+    console.error("API proxy error", error);
+    return new Response(JSON.stringify({ detail: "API proxy unavailable" }), {
+      status: 502,
+      headers: { "content-type": "application/json" },
+    });
+  }
 }
 
 // h3 swallows in-handler throws into a normal 500 Response with body
@@ -37,6 +70,11 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const { pathname } = new URL(request.url);
+    if (pathname.startsWith("/api")) {
+      return proxyApiRequest(request);
+    }
+
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

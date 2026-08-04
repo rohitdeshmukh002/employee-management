@@ -1,12 +1,13 @@
 # Production stack using images from GitHub Container Registry.
-# After CD pushes to main:
-#   docker compose -f docker-compose.prod.yml pull
-#   docker compose -f docker-compose.prod.yml up -d
+#
+# 1. Copy env template and set required secrets + IMAGE_TAG (full git SHA from CD):
+#      cp .env.prod.example .env.prod
+# 2. Pull and run the matching immutable images:
+#      docker compose --env-file .env.prod -f docker-compose.prod.yml pull
+#      docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+#
 # Set packages to Public under GitHub Packages for frictionless pulls,
 # or: echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
-#
-# Override image owner if needed:
-#   GHCR_OWNER=rohitdeshmukh002 docker compose -f docker-compose.prod.yml up -d
 
 services:
   postgres:
@@ -14,10 +15,11 @@ services:
     container_name: employee-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-employee}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-employee}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}
       POSTGRES_DB: ${POSTGRES_DB:-employee_management}
+    # Loopback only — not exposed on the public network interface
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -29,11 +31,11 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ghcr.io/${GHCR_OWNER:-rohitdeshmukh002}/employee-management-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-rohitdeshmukh002}/employee-management-backend:${IMAGE_TAG:?Set IMAGE_TAG to the full git commit SHA from CD}
     container_name: employee-backend
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-employee}:${POSTGRES_PASSWORD:-employee}@postgres:5432/${POSTGRES_DB:-employee_management}
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-employee}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}@postgres:5432/${POSTGRES_DB:-employee_management}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env.prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       OFFICE_LAT: ${OFFICE_LAT:-18.5204}
       OFFICE_LNG: ${OFFICE_LNG:-73.8567}
@@ -49,12 +51,14 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/${GHCR_OWNER:-rohitdeshmukh002}/employee-management-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-rohitdeshmukh002}/employee-management-frontend:${IMAGE_TAG:?Set IMAGE_TAG to the full git commit SHA from CD}
     container_name: employee-frontend
     environment:
       HOST: "0.0.0.0"
       PORT: "3000"
       NODE_ENV: production
+      # Browser calls /api on the frontend origin; Nitro proxies to the backend service.
+      API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:8000}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

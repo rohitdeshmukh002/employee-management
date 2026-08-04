@@ -20,14 +20,15 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Image name prefix
         id: meta
         run: |
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
-          echo "sha_short=${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+          echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           echo "backend=${{ env.REGISTRY }}/${OWNER}/employee-management-backend" >> "$GITHUB_OUTPUT"
           echo "frontend=${{ env.REGISTRY }}/${OWNER}/employee-management-frontend" >> "$GITHUB_OUTPUT"
 
@@ -46,8 +47,8 @@ jobs:
           target: production
           push: true
           tags: |
+            ${{ steps.meta.outputs.backend }}:${{ steps.meta.outputs.sha }}
             ${{ steps.meta.outputs.backend }}:latest
-            ${{ steps.meta.outputs.backend }}:${{ steps.meta.outputs.sha_short }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
@@ -57,10 +58,11 @@ jobs:
           context: ./frontend
           target: production
           push: true
+          # Same-origin /api; production Nitro server proxies to API_PROXY_TARGET at runtime.
           build-args: |
             VITE_API_URL=/api
           tags: |
+            ${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.sha }}
             ${{ steps.meta.outputs.frontend }}:latest
-            ${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.sha_short }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
