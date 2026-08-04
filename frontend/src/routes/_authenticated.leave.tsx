@@ -7,6 +7,10 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
 import Grid from "@mui/material/Grid";
 import InputLabel from "@mui/material/InputLabel";
@@ -22,7 +26,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { api, getApiErrorMessage } from "@/lib/api";
@@ -36,6 +40,7 @@ type LeaveRecord = {
   start_date: string;
   end_date: string;
   reason: string;
+  admin_note: string;
   status: string;
 };
 
@@ -54,6 +59,10 @@ function LeavePage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
 
   const {
     data: records = [],
@@ -63,6 +72,14 @@ function LeavePage() {
     queryKey: ["leave"],
     queryFn: async () => (await api.get<LeaveRecord[]>("/leave")).data,
   });
+
+  const filtered = useMemo(() => {
+    return records.filter((r) => {
+      if (filterFrom && r.end_date < filterFrom) return false;
+      if (filterTo && r.start_date > filterTo) return false;
+      return true;
+    });
+  }, [records, filterFrom, filterTo]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -84,10 +101,16 @@ function LeavePage() {
     }
   };
 
-  const updateStatus = async (id: number, status: "approved" | "rejected") => {
+  const updateStatus = async (
+    id: number,
+    status: "approved" | "rejected",
+    admin_note = "",
+  ) => {
     try {
       setActionError(null);
-      await api.patch(`/leave/${id}`, { status });
+      await api.patch(`/leave/${id}`, { status, admin_note });
+      setRejectId(null);
+      setRejectNote("");
       await queryClient.invalidateQueries({ queryKey: ["leave"] });
     } catch (err) {
       setActionError(getApiErrorMessage(err, "Unable to update leave request"));
@@ -97,6 +120,34 @@ function LeavePage() {
   return (
     <Stack spacing={3}>
       <PageHeader title="Leave" description="Request and manage time off." />
+
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <TextField
+          label="From"
+          type="date"
+          size="small"
+          value={filterFrom}
+          onChange={(e) => setFilterFrom(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="To"
+          type="date"
+          size="small"
+          value={filterTo}
+          onChange={(e) => setFilterTo(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <Button
+          size="small"
+          onClick={() => {
+            setFilterFrom("");
+            setFilterTo("");
+          }}
+        >
+          Clear dates
+        </Button>
+      </Stack>
 
       {user?.employee_id != null && (
         <Card>
@@ -147,7 +198,6 @@ function LeavePage() {
                     label="Reason"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="Optional note"
                     multiline
                     minRows={3}
                   />
@@ -187,29 +237,32 @@ function LeavePage() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Employee</TableCell>
+                {isAdmin && <TableCell>Employee</TableCell>}
                 <TableCell>Type</TableCell>
                 <TableCell>Dates</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Reason</TableCell>
+                <TableCell>Admin note</TableCell>
                 {isAdmin && <TableCell>Actions</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
-              {records.length === 0 ? (
+              {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 6 : 5}>
+                  <TableCell colSpan={isAdmin ? 7 : 6}>
                     <Typography variant="body2" color="text.secondary">
-                      No leave requests yet.
+                      No leave requests in this date range.
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                records.map((record) => (
+                filtered.map((record) => (
                   <TableRow key={record.id} hover>
-                    <TableCell>
-                      {record.employee_name ?? `Employee #${record.employee_id}`}
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        {record.employee_name ?? `Employee #${record.employee_id}`}
+                      </TableCell>
+                    )}
                     <TableCell sx={{ textTransform: "capitalize" }}>{record.leave_type}</TableCell>
                     <TableCell>
                       {record.start_date} → {record.end_date}
@@ -229,6 +282,7 @@ function LeavePage() {
                       />
                     </TableCell>
                     <TableCell>{record.reason || "—"}</TableCell>
+                    <TableCell>{record.admin_note || "—"}</TableCell>
                     {isAdmin && (
                       <TableCell>
                         {record.status === "pending" ? (
@@ -244,9 +298,9 @@ function LeavePage() {
                               size="small"
                               variant="outlined"
                               color="error"
-                              onClick={() => void updateStatus(record.id, "rejected")}
+                              onClick={() => setRejectId(record.id)}
                             >
-                              Reject
+                              Deny
                             </Button>
                           </Stack>
                         ) : (
@@ -261,6 +315,36 @@ function LeavePage() {
           </Table>
         </TableContainer>
       )}
+
+      <Dialog open={rejectId != null} onClose={() => setRejectId(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Deny leave request</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Reason for denial"
+            value={rejectNote}
+            onChange={(e) => setRejectNote(e.target.value)}
+            required
+            fullWidth
+            multiline
+            minRows={3}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setRejectId(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={!rejectNote.trim()}
+            onClick={() => {
+              if (rejectId == null) return;
+              void updateStatus(rejectId, "rejected", rejectNote);
+            }}
+          >
+            Deny request
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

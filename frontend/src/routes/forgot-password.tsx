@@ -25,7 +25,7 @@ function ForgotPasswordPage() {
   return (
     <AuthLayout
       title="Reset password"
-      subtitle="Password reset email delivery is not configured yet."
+      subtitle="Contact your administrator to reset your password."
       footer={
         <LinkMui component={Link} to="/login" underline="hover" fontWeight={600}>
           Back to sign in
@@ -34,8 +34,8 @@ function ForgotPasswordPage() {
     >
       {sent ? (
         <Typography variant="body2" color="text.secondary">
-          If an account exists for {email}, contact your administrator to reset the password. Demo
-          accounts use <strong>Password123!</strong>
+          If an account exists for {email}, ask your administrator to issue a new temporary
+          password.
         </Typography>
       ) : (
         <Box component="form" onSubmit={handleSubmit}>
@@ -45,12 +45,11 @@ function ForgotPasswordPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
               required
               autoComplete="email"
             />
             <Button type="submit" variant="contained" size="large" fullWidth>
-              Request reset help
+              Request help
             </Button>
           </Stack>
         </Box>

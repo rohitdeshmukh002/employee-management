@@ -21,8 +21,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 interface AuthApiUser {
@@ -41,7 +41,6 @@ interface TokenResponse {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Share one in-flight /auth/me so Strict Mode remounts don't double-hit the API. */
 let pendingMeRequest: Promise<AuthApiUser> | null = null;
 
 function fetchCurrentUser(): Promise<AuthApiUser> {
@@ -68,7 +67,6 @@ function mapUser(apiUser: AuthApiUser): User {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  // Start false so SSR does not paint a permanent "Checking your session..." state.
   const [isLoading, setIsLoading] = useState(false);
   const sessionEpoch = useRef(0);
 
@@ -136,18 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      const { data } = await api.post<TokenResponse>("/auth/register", {
-        name,
-        email,
-        password,
-      });
-      persistSession(data);
-      goToDashboard();
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, "Unable to create account"));
-    }
+  const refreshUser = async () => {
+    const data = await fetchCurrentUser();
+    const mapped = mapUser(data);
+    setUser(mapped);
+    setStoredUser(mapped);
   };
 
   const logout = () => {
@@ -164,8 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
-        register,
         logout,
+        refreshUser,
       }}
     >
       {children}

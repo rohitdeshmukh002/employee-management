@@ -1,17 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { PageHeader } from "@/components/page-header";
-import { api, getApiErrorMessage } from "@/lib/api";
+import { api, getApiErrorMessage, setStoredUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 type EmployeeProfile = {
@@ -19,6 +21,7 @@ type EmployeeProfile = {
   first_name: string;
   last_name: string;
   email: string;
+  phone: string | null;
   department: string;
   position: string;
   salary: number | null;
@@ -41,14 +44,55 @@ function ProfileField({ label, value }: { label: string; value: ReactNode }) {
 }
 
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const queryClient = useQueryClient();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const {
     data: employee,
-    error,
+    error: loadError,
   } = useQuery({
     queryKey: ["employees", "me"],
     queryFn: async () => (await api.get<EmployeeProfile>("/employees/me")).data,
     enabled: user?.employee_id != null,
+  });
+
+  useEffect(() => {
+    if (!employee) return;
+    setFirstName(employee.first_name);
+    setLastName(employee.last_name);
+    setPhone(employee.phone ?? "");
+  }, [employee]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.patch<EmployeeProfile>("/employees/me", {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || null,
+      });
+      return data;
+    },
+    onSuccess: async (data) => {
+      setMessage("Profile updated");
+      setError(null);
+      await queryClient.invalidateQueries({ queryKey: ["employees", "me"] });
+      await refreshUser();
+      if (user) {
+        setStoredUser({
+          ...user,
+          name: `${data.first_name} ${data.last_name}`.trim(),
+        });
+      }
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(getApiErrorMessage(err, "Unable to update profile"));
+    },
   });
 
   return (
@@ -60,7 +104,7 @@ function ProfilePage() {
             <CardContent>
               <Stack spacing={2}>
                 <Typography variant="h6">{user?.name ?? "User"}</Typography>
-                <ProfileField label="Email" value={user?.email} />
+                <ProfileField label="Email (read-only)" value={user?.email} />
                 <ProfileField
                   label="Role"
                   value={
@@ -86,24 +130,47 @@ function ProfilePage() {
                 <Typography variant="h6">Employee record</Typography>
                 {!user?.employee_id && (
                   <Typography variant="body2" color="text.secondary">
-                    This account is not linked to an employee record. An admin must create your
-                    employee profile and link it to this account.
+                    This account is not linked to an employee record. Ask an admin to create your
+                    profile.
                   </Typography>
                 )}
-                {error && (
+                {(loadError || error) && (
                   <Alert severity="error">
-                    {getApiErrorMessage(error, "Failed to load profile")}
+                    {error ?? getApiErrorMessage(loadError, "Failed to load profile")}
                   </Alert>
                 )}
+                {message && <Alert severity="success">{message}</Alert>}
                 {employee && (
                   <>
-                    <ProfileField
-                      label="Name"
-                      value={`${employee.first_name} ${employee.last_name}`}
+                    <TextField
+                      label="First name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
                     />
+                    <TextField
+                      label="Last name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
+                    <TextField
+                      label="Phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                    <TextField label="Email" value={employee.email} InputProps={{ readOnly: true }} />
                     <ProfileField label="Department" value={employee.department} />
                     <ProfileField label="Position" value={employee.position} />
                     <ProfileField label="Hire date" value={employee.hire_date} />
+                    <Button
+                      variant="contained"
+                      disabled={saveMutation.isPending}
+                      onClick={() => saveMutation.mutate()}
+                      sx={{ alignSelf: "flex-start" }}
+                    >
+                      {saveMutation.isPending ? "Saving..." : "Save changes"}
+                    </Button>
                   </>
                 )}
               </Stack>

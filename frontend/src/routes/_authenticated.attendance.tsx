@@ -18,6 +18,8 @@ import { useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { api, getApiErrorMessage } from "@/lib/api";
+import { getCurrentPosition } from "@/lib/geo";
+import { useAuth } from "@/lib/auth";
 
 type AttendanceRecord = {
   id: number;
@@ -27,6 +29,9 @@ type AttendanceRecord = {
   check_in: string | null;
   check_out: string | null;
   status: string;
+  check_in_lat: number | null;
+  check_in_lng: number | null;
+  is_office: boolean | null;
 };
 
 export const Route = createFileRoute("/_authenticated/attendance")({
@@ -34,8 +39,11 @@ export const Route = createFileRoute("/_authenticated/attendance")({
 });
 
 function AttendancePage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const {
@@ -50,8 +58,11 @@ function AttendancePage() {
   const runAction = async (path: "/attendance/check-in" | "/attendance/check-out") => {
     setBusy(true);
     setActionError(null);
+    setActionMessage(null);
     try {
-      await api.post(path);
+      const geo = await getCurrentPosition();
+      const { data } = await api.post<{ message: string }>(path, geo);
+      setActionMessage(data.message);
       await queryClient.invalidateQueries({ queryKey: ["attendance"] });
     } catch (err) {
       setActionError(getApiErrorMessage(err, "Action failed"));
@@ -64,27 +75,38 @@ function AttendancePage() {
     <Box>
       <PageHeader
         title="Attendance"
-        description="Track daily check-ins and working hours."
+        description={
+          isAdmin
+            ? "Team check-ins with location clarity (office vs remote)."
+            : "Check in from anywhere. Office location is preferred and shown to admin."
+        }
         action={
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              disabled={busy}
-              onClick={() => void runAction("/attendance/check-in")}
-            >
-              Check in
-            </Button>
-            <Button
-              variant="outlined"
-              disabled={busy}
-              onClick={() => void runAction("/attendance/check-out")}
-            >
-              Check out
-            </Button>
-          </Stack>
+          !isAdmin ? (
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                disabled={busy}
+                onClick={() => void runAction("/attendance/check-in")}
+              >
+                Check in
+              </Button>
+              <Button
+                variant="outlined"
+                disabled={busy}
+                onClick={() => void runAction("/attendance/check-out")}
+              >
+                Check out
+              </Button>
+            </Stack>
+          ) : undefined
         }
       />
 
+      {actionMessage && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {actionMessage}
+        </Alert>
+      )}
       {actionError && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {actionError}
@@ -107,33 +129,45 @@ function AttendancePage() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Employee</TableCell>
+                {isAdmin && <TableCell>Employee</TableCell>}
                 <TableCell>Date</TableCell>
                 <TableCell>Check in</TableCell>
                 <TableCell>Check out</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Location</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={isAdmin ? 6 : 5}>
                     <Typography variant="body2" color="text.secondary">
-                      No attendance records yet. Use Check in to start today.
+                      No attendance records yet.
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 records.map((record) => (
                   <TableRow key={record.id} hover>
-                    <TableCell>
-                      {record.employee_name ?? `Employee #${record.employee_id}`}
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        {record.employee_name ?? `Employee #${record.employee_id}`}
+                      </TableCell>
+                    )}
                     <TableCell>{record.date}</TableCell>
                     <TableCell>{record.check_in ?? "—"}</TableCell>
                     <TableCell>{record.check_out ?? "—"}</TableCell>
                     <TableCell>
                       <Chip label={record.status} size="small" sx={{ textTransform: "capitalize" }} />
+                    </TableCell>
+                    <TableCell>
+                      {record.is_office === true ? (
+                        <Chip label="Office" color="success" size="small" variant="outlined" />
+                      ) : record.is_office === false ? (
+                        <Chip label="Remote" color="warning" size="small" variant="outlined" />
+                      ) : (
+                        <Chip label="Unknown" size="small" variant="outlined" />
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

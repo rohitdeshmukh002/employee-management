@@ -7,6 +7,7 @@ import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
 import type { SvgIconComponent } from "@mui/icons-material";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -34,6 +35,7 @@ const items: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: DashboardRoundedIcon },
   { title: "Employees", url: "/employees", icon: PeopleAltRoundedIcon, roles: ["admin"] },
   { title: "Attendance", url: "/attendance", icon: EventAvailableRoundedIcon },
+  { title: "Timesheet", url: "/timesheet", icon: ScheduleRoundedIcon },
   { title: "Leave", url: "/leave", icon: CalendarMonthRoundedIcon },
   { title: "Salary", url: "/salary", icon: PaymentsRoundedIcon },
   { title: "Profile", url: "/profile", icon: PersonRoundedIcon },

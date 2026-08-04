@@ -76,8 +76,8 @@ api.interceptors.response.use(
     if (error.response?.status !== 401) return Promise.reject(error);
 
     const url = String(error.config?.url ?? "");
-    // Failed login/register must not wipe storage or force a reload loop.
-    if (url.includes("/auth/login") || url.includes("/auth/register")) {
+    // Failed login must not wipe storage or force a reload loop.
+    if (url.includes("/auth/login")) {
       return Promise.reject(error);
     }
 

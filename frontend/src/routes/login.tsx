@@ -68,12 +68,12 @@ function LoginPage() {
   return (
     <AuthLayout
       title="Sign in"
-      subtitle="Enter your credentials to access the employee portal."
+      subtitle="Use the credentials shared by your administrator."
       footer={
         <>
-          Don&apos;t have an account?{" "}
-          <LinkMui component={Link} to="/register" underline="hover" fontWeight={600}>
-            Register
+          Forgot your password?{" "}
+          <LinkMui component={Link} to="/forgot-password" underline="hover" fontWeight={600}>
+            Get help
           </LinkMui>
         </>
       }
@@ -85,32 +85,18 @@ function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@gmail.com"
             required
             autoComplete="email"
           />
-          <Box>
-            <TextField
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              inputProps={{ minLength: 6 }}
-              autoComplete="current-password"
-            />
-            <Stack direction="row" sx={{ justifyContent: "flex-end", mb: 0.5 }}>
-              <LinkMui
-                component={Link}
-                to="/forgot-password"
-                variant="caption"
-                underline="hover"
-                fontWeight={600}
-              >
-                Forgot password?
-              </LinkMui>
-            </Stack>
-          </Box>
+          <TextField
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            inputProps={{ minLength: 6 }}
+            autoComplete="current-password"
+          />
           {error && <Alert severity="error">{error}</Alert>}
           <Button type="submit" variant="contained" size="large" disabled={loading} fullWidth>
             {loading ? "Signing in..." : "Sign in"}
