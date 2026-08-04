@@ -21,8 +21,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 interface AuthApiUser {
@@ -41,6 +41,20 @@ interface TokenResponse {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+let pendingMeRequest: Promise<AuthApiUser> | null = null;
+
+function fetchCurrentUser(): Promise<AuthApiUser> {
+  if (!pendingMeRequest) {
+    pendingMeRequest = api
+      .get<AuthApiUser>("/auth/me")
+      .then((res) => res.data)
+      .finally(() => {
+        pendingMeRequest = null;
+      });
+  }
+  return pendingMeRequest;
+}
+
 function mapUser(apiUser: AuthApiUser): User {
   return {
     id: apiUser.id,
@@ -53,45 +67,52 @@ function mapUser(apiUser: AuthApiUser): User {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const sessionEpoch = useRef(0);
 
   useEffect(() => {
+    let cancelled = false;
     const epoch = sessionEpoch.current;
+
     const bootstrap = async () => {
       const token = getToken();
       const stored = getStoredUser();
+
       if (!token) {
         clearAuthStorage();
-        if (sessionEpoch.current === epoch) {
+        if (!cancelled && sessionEpoch.current === epoch) {
           setUser(null);
           setIsLoading(false);
         }
         return;
       }
 
-      if (stored && sessionEpoch.current === epoch) {
-        setUser(stored);
+      if (!cancelled && sessionEpoch.current === epoch) {
+        setIsLoading(true);
+        if (stored) setUser(stored);
       }
 
       try {
-        const { data } = await api.get<AuthApiUser>("/auth/me");
-        if (sessionEpoch.current !== epoch) return;
+        const data = await fetchCurrentUser();
+        if (cancelled || sessionEpoch.current !== epoch) return;
         const mapped = mapUser(data);
         setUser(mapped);
         setStoredUser(mapped);
       } catch {
-        if (sessionEpoch.current !== epoch) return;
+        if (cancelled || sessionEpoch.current !== epoch) return;
         clearAuthStorage();
         setUser(null);
       } finally {
-        if (sessionEpoch.current === epoch) {
+        if (!cancelled && sessionEpoch.current === epoch) {
           setIsLoading(false);
         }
       }
     };
 
     void bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const persistSession = (payload: TokenResponse) => {
@@ -113,18 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      const { data } = await api.post<TokenResponse>("/auth/register", {
-        name,
-        email,
-        password,
-      });
-      persistSession(data);
-      goToDashboard();
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, "Unable to create account"));
-    }
+  const refreshUser = async () => {
+    const data = await fetchCurrentUser();
+    const mapped = mapUser(data);
+    setUser(mapped);
+    setStoredUser(mapped);
   };
 
   const logout = () => {
@@ -141,8 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
-        register,
         logout,
+        refreshUser,
       }}
     >
       {children}

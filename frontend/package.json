@@ -9,14 +9,17 @@
     "build:dev": "vite build --mode development",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
-
     "lint": "eslint .",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
     "@fontsource/inter": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
+    "@mui/icons-material": "^9.2.0",
+    "@mui/material": "^9.2.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",

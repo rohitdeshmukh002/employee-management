@@ -9,11 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTimesheetRouteImport } from './routes/_authenticated.timesheet'
 import { Route as AuthenticatedSalaryRouteImport } from './routes/_authenticated.salary'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedLeaveRouteImport } from './routes/_authenticated.leave'
@@ -21,11 +21,6 @@ import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
 
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -44,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTimesheetRoute = AuthenticatedTimesheetRouteImport.update({
+  id: '/timesheet',
+  path: '/timesheet',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSalaryRoute = AuthenticatedSalaryRouteImport.update({
   id: '/salary',
@@ -80,25 +80,25 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/leave': typeof AuthenticatedLeaveRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/salary': typeof AuthenticatedSalaryRoute
+  '/timesheet': typeof AuthenticatedTimesheetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/leave': typeof AuthenticatedLeaveRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/salary': typeof AuthenticatedSalaryRoute
+  '/timesheet': typeof AuthenticatedTimesheetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,13 +106,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
   '/_authenticated/leave': typeof AuthenticatedLeaveRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/salary': typeof AuthenticatedSalaryRoute
+  '/_authenticated/timesheet': typeof AuthenticatedTimesheetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,38 +120,38 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
-    | '/register'
     | '/attendance'
     | '/dashboard'
     | '/employees'
     | '/leave'
     | '/profile'
     | '/salary'
+    | '/timesheet'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/forgot-password'
     | '/login'
-    | '/register'
     | '/attendance'
     | '/dashboard'
     | '/employees'
     | '/leave'
     | '/profile'
     | '/salary'
+    | '/timesheet'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/forgot-password'
     | '/login'
-    | '/register'
     | '/_authenticated/attendance'
     | '/_authenticated/dashboard'
     | '/_authenticated/employees'
     | '/_authenticated/leave'
     | '/_authenticated/profile'
     | '/_authenticated/salary'
+    | '/_authenticated/timesheet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -159,18 +159,10 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
-  RegisterRoute: typeof RegisterRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -198,6 +190,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/timesheet': {
+      id: '/_authenticated/timesheet'
+      path: '/timesheet'
+      fullPath: '/timesheet'
+      preLoaderRoute: typeof AuthenticatedTimesheetRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/salary': {
       id: '/_authenticated/salary'
@@ -251,6 +250,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedLeaveRoute: typeof AuthenticatedLeaveRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSalaryRoute: typeof AuthenticatedSalaryRoute
+  AuthenticatedTimesheetRoute: typeof AuthenticatedTimesheetRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -260,6 +260,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedLeaveRoute: AuthenticatedLeaveRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSalaryRoute: AuthenticatedSalaryRoute,
+  AuthenticatedTimesheetRoute: AuthenticatedTimesheetRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -271,7 +272,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
-  RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

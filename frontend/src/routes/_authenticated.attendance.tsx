@@ -1,17 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { api, getApiErrorMessage } from "@/lib/api";
+import { getCurrentPosition } from "@/lib/geo";
+import { useAuth } from "@/lib/auth";
 
 type AttendanceRecord = {
   id: number;
@@ -21,6 +29,9 @@ type AttendanceRecord = {
   check_in: string | null;
   check_out: string | null;
   status: string;
+  check_in_lat: number | null;
+  check_in_lng: number | null;
+  is_office: boolean | null;
 };
 
 export const Route = createFileRoute("/_authenticated/attendance")({
@@ -28,34 +39,31 @@ export const Route = createFileRoute("/_authenticated/attendance")({
 });
 
 function AttendancePage() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<AttendanceRecord[]>("/attendance")
-      .then((res) => {
-        setRecords(res.data);
-        setError(null);
-      })
-      .catch((err) => setError(getApiErrorMessage(err, "Failed to load attendance")))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const {
+    data: records = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["attendance"],
+    queryFn: async () => (await api.get<AttendanceRecord[]>("/attendance")).data,
+  });
 
   const runAction = async (path: "/attendance/check-in" | "/attendance/check-out") => {
     setBusy(true);
     setActionError(null);
+    setActionMessage(null);
     try {
-      await api.post(path);
-      load();
+      const geo = await getCurrentPosition();
+      const { data } = await api.post<{ message: string }>(path, geo);
+      setActionMessage(data.message);
+      await queryClient.invalidateQueries({ queryKey: ["attendance"] });
     } catch (err) {
       setActionError(getApiErrorMessage(err, "Action failed"));
     } finally {
@@ -64,64 +72,110 @@ function AttendancePage() {
   };
 
   return (
-    <div>
+    <Box>
       <PageHeader
         title="Attendance"
-        description="Track daily check-ins and working hours."
+        description={
+          isAdmin
+            ? "Team check-ins with location clarity (office vs remote)."
+            : "Check in from anywhere. Office location is preferred and shown to admin."
+        }
         action={
-          <div className="flex gap-2">
-            <Button disabled={busy} onClick={() => void runAction("/attendance/check-in")}>
-              Check in
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => void runAction("/attendance/check-out")}
-            >
-              Check out
-            </Button>
-          </div>
+          !isAdmin ? (
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                disabled={busy}
+                onClick={() => void runAction("/attendance/check-in")}
+              >
+                Check in
+              </Button>
+              <Button
+                variant="outlined"
+                disabled={busy}
+                onClick={() => void runAction("/attendance/check-out")}
+              >
+                Check out
+              </Button>
+            </Stack>
+          ) : undefined
         }
       />
 
-      {actionError && <p className="mb-3 text-sm text-destructive">{actionError}</p>}
-      {loading && <p className="text-sm text-muted-foreground">Loading attendance...</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {actionMessage && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {actionMessage}
+        </Alert>
+      )}
+      {actionError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {actionError}
+        </Alert>
+      )}
+      {isLoading && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}>
+          <CircularProgress size={22} />
+          <Typography variant="body2" color="text.secondary">
+            Loading attendance...
+          </Typography>
+        </Box>
+      )}
+      {error && (
+        <Alert severity="error">{getApiErrorMessage(error, "Failed to load attendance")}</Alert>
+      )}
 
-      {!loading && !error && (
-        <div className="rounded-lg border">
+      {!isLoading && !error && (
+        <TableContainer component={Paper} variant="outlined">
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Check in</TableHead>
-                <TableHead>Check out</TableHead>
-                <TableHead>Status</TableHead>
+                {isAdmin && <TableCell>Employee</TableCell>}
+                <TableCell>Date</TableCell>
+                <TableCell>Check in</TableCell>
+                <TableCell>Check out</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Location</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
-                    No attendance records yet. Use Check in to start today.
+                  <TableCell colSpan={isAdmin ? 6 : 5}>
+                    <Typography variant="body2" color="text.secondary">
+                      No attendance records yet.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 records.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{record.employee_name ?? `Employee #${record.employee_id}`}</TableCell>
+                  <TableRow key={record.id} hover>
+                    {isAdmin && (
+                      <TableCell>
+                        {record.employee_name ?? `Employee #${record.employee_id}`}
+                      </TableCell>
+                    )}
                     <TableCell>{record.date}</TableCell>
                     <TableCell>{record.check_in ?? "—"}</TableCell>
                     <TableCell>{record.check_out ?? "—"}</TableCell>
-                    <TableCell className="capitalize">{record.status}</TableCell>
+                    <TableCell>
+                      <Chip label={record.status} size="small" sx={{ textTransform: "capitalize" }} />
+                    </TableCell>
+                    <TableCell>
+                      {record.is_office === true ? (
+                        <Chip label="Office" color="success" size="small" variant="outlined" />
+                      ) : record.is_office === false ? (
+                        <Chip label="Remote" color="warning" size="small" variant="outlined" />
+                      ) : (
+                        <Chip label="Unknown" size="small" variant="outlined" />
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableContainer>
       )}
-    </div>
+    </Box>
   );
 }

@@ -13,6 +13,7 @@ class Employee(Base):
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), unique=True)
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     department: Mapped[str] = mapped_column(String(100))
     position: Mapped[str] = mapped_column(String(100))
     salary: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
@@ -24,3 +25,5 @@ class Employee(Base):
     user = relationship("User", back_populates="employee", uselist=False)
     attendance_records = relationship("Attendance", back_populates="employee")
     leave_requests = relationship("LeaveRequest", back_populates="employee")
+    timesheet_entries = relationship("TimesheetEntry", back_populates="employee")
+    salary_payments = relationship("SalaryPayment", back_populates="employee")

@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS employees (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(30),
     department VARCHAR(100) NOT NULL,
     position VARCHAR(100) NOT NULL,
     salary NUMERIC(10, 2),
@@ -27,6 +28,13 @@ CREATE TABLE IF NOT EXISTS attendance (
     check_in TIME,
     check_out TIME,
     status VARCHAR(20) NOT NULL DEFAULT 'present',
+    check_in_lat DOUBLE PRECISION,
+    check_in_lng DOUBLE PRECISION,
+    check_in_accuracy DOUBLE PRECISION,
+    is_office BOOLEAN,
+    check_out_lat DOUBLE PRECISION,
+    check_out_lng DOUBLE PRECISION,
+    check_out_accuracy DOUBLE PRECISION,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (employee_id, date)
 );
@@ -38,8 +46,32 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     reason TEXT NOT NULL DEFAULT '',
+    admin_note TEXT NOT NULL DEFAULT '',
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS timesheet_entries (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id),
+    work_date DATE NOT NULL,
+    hours NUMERIC(4, 2) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (employee_id, work_date)
+);
+
+CREATE TABLE IF NOT EXISTS salary_payments (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id),
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL,
+    deposited_on DATE NOT NULL,
+    payslip_filename VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (employee_id, year, month)
 );
 
 INSERT INTO employees (first_name, last_name, email, department, position, salary, hire_date)

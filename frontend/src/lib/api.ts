@@ -59,7 +59,8 @@ export function clearAuthStorage() {
 
 export function goToDashboard() {
   if (typeof window === "undefined") return;
-  window.location.assign("/dashboard");
+  // Client-side navigation avoids a full document reload that re-runs SSR auth checks.
+  window.location.replace("/dashboard");
 }
 
 api.interceptors.request.use((config) => {
@@ -75,8 +76,8 @@ api.interceptors.response.use(
     if (error.response?.status !== 401) return Promise.reject(error);
 
     const url = String(error.config?.url ?? "");
-    // Failed login/register must not wipe storage or force a reload loop.
-    if (url.includes("/auth/login") || url.includes("/auth/register")) {
+    // Failed login must not wipe storage or force a reload loop.
+    if (url.includes("/auth/login")) {
       return Promise.reject(error);
     }
 

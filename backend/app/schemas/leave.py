@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 LeaveType = Literal["annual", "sick", "personal", "unpaid"]
@@ -17,6 +17,13 @@ class LeaveRequestCreate(BaseModel):
 
 class LeaveStatusUpdate(BaseModel):
     status: Literal["approved", "rejected"]
+    admin_note: str = Field(default="", max_length=1000)
+
+    @model_validator(mode="after")
+    def require_note_on_reject(self):
+        if self.status == "rejected" and not self.admin_note.strip():
+            raise ValueError("A reason is required when rejecting leave")
+        return self
 
 
 class LeaveRequestRead(BaseModel):
@@ -29,5 +36,6 @@ class LeaveRequestRead(BaseModel):
     start_date: date
     end_date: date
     reason: str
+    admin_note: str = ""
     status: str
     created_at: datetime

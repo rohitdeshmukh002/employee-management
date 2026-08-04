@@ -7,20 +7,36 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import CssBaseline from "@mui/material/CssBaseline";
+import { ThemeProvider } from "@mui/material/styles";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import "@fontsource-variable/plus-jakarta-sans";
 
 import { AuthProvider } from "@/lib/auth";
-import { Toaster } from "@/components/ui/sonner";
+import { theme } from "@/theme";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="font-heading text-4xl font-semibold">404</h1>
-      <p className="text-muted-foreground">The page you&apos;re looking for doesn&apos;t exist.</p>
-      <Link to="/" className="text-primary underline-offset-4 hover:underline">
+    <Stack
+      spacing={2}
+      sx={{
+        minHeight: "100vh",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 4,
+        textAlign: "center",
+      }}
+    >
+      <Typography variant="h3">404</Typography>
+      <Typography color="text.secondary">The page you&apos;re looking for doesn&apos;t exist.</Typography>
+      <Button component={Link} to="/" variant="contained">
         Go home
-      </Link>
-    </div>
+      </Button>
+    </Stack>
   );
 }
 
@@ -29,30 +45,35 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="font-heading text-2xl font-semibold">Something went wrong</h1>
-      <p className="max-w-md text-sm text-muted-foreground">
+    <Stack
+      spacing={2}
+      sx={{
+        minHeight: "100vh",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 4,
+        textAlign: "center",
+      }}
+    >
+      <Typography variant="h5">Something went wrong</Typography>
+      <Typography color="text.secondary" sx={{ maxWidth: 420 }}>
         This page didn&apos;t load. Try refreshing or head back home.
-      </p>
-      <div className="flex gap-3">
-        <button
-          type="button"
+      </Typography>
+      <Stack direction="row" spacing={1.5}>
+        <Button
+          variant="contained"
           onClick={() => {
             router.invalidate();
             reset();
           }}
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           Try again
-        </button>
-        <Link
-          to="/"
-          className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm"
-        >
+        </Button>
+        <Button component={Link} to="/" variant="outlined">
           Go home
-        </Link>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -90,11 +111,15 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Outlet />
-        <Toaster />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Box sx={{ minHeight: "100vh" }}>
+            <Outlet />
+          </Box>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

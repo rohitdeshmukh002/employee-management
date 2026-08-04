@@ -24,10 +24,15 @@ services:
       DATABASE_URL: postgresql://employee:employee@postgres:5432/employee_management
       SECRET_KEY: dev-secret-change-me-employee-management-portal
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      OFFICE_LAT: "18.5204"
+      OFFICE_LNG: "73.8567"
+      OFFICE_RADIUS_M: "300"
+      UPLOAD_DIR: /app/uploads
     ports:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
+      - payslip_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,19 +44,18 @@ services:
     container_name: employee-frontend
     environment:
       VITE_API_PROXY_TARGET: http://backend:8000
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-      - ./frontend/package.json:/app/package.json
-      - ./frontend/package-lock.json:/app/package-lock.json
-      # Keep node_modules out of the image; install into this volume on first start
-      - frontend_node_modules:/app/node_modules
+      # Mount whole app so TanStack can write routeTree.gen.ts on the same filesystem
+      - ./frontend:/app
+      # Keep image node_modules (don't use host folder)
+      - /app/node_modules
     depends_on:
       - backend
 
 volumes:
   postgres_data:
-  frontend_node_modules:
+  payslip_uploads:
