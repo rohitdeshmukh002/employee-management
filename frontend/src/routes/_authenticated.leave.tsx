@@ -128,7 +128,7 @@ function LeavePage() {
           size="small"
           value={filterFrom}
           onChange={(e) => setFilterFrom(e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          slotProps={{ inputLabel: { shrink: true } }}
         />
         <TextField
           label="To"
@@ -136,7 +136,7 @@ function LeavePage() {
           size="small"
           value={filterTo}
           onChange={(e) => setFilterTo(e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          slotProps={{ inputLabel: { shrink: true } }}
         />
         <Button
           size="small"
@@ -180,7 +180,7 @@ function LeavePage() {
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     required
-                    InputLabelProps={{ shrink: true }}
+                    slotProps={{ inputLabel: { shrink: true } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -190,7 +190,7 @@ function LeavePage() {
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     required
-                    InputLabelProps={{ shrink: true }}
+                    slotProps={{ inputLabel: { shrink: true } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12 }}>

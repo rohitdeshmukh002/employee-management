@@ -94,7 +94,7 @@ function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            inputProps={{ minLength: 6 }}
+            slotProps={{ htmlInput: { minLength: 6 } }}
             autoComplete="current-password"
           />
           {error && <Alert severity="error">{error}</Alert>}

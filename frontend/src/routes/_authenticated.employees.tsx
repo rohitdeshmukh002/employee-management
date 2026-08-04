@@ -258,8 +258,10 @@ function EmployeesPage() {
                   onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                   required={key !== "phone" && key !== "salary"}
                   fullWidth
-                  InputLabelProps={key === "hire_date" ? { shrink: true } : undefined}
-                  inputProps={key === "password" ? { minLength: 6 } : undefined}
+                  slotProps={{
+                    inputLabel: key === "hire_date" ? { shrink: true } : undefined,
+                    htmlInput: key === "password" ? { minLength: 6 } : undefined,
+                  }}
                 />
               </Grid>
             ))}

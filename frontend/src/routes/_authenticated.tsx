@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import Toolbar from "@mui/material/Toolbar";
@@ -34,12 +35,30 @@ export function requireAdminRole() {
 function AuthenticatedLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     if (!getToken()) {
       void navigate({ to: "/login" });
+      return;
     }
+    setAuthReady(true);
   }, [navigate]);
+
+  if (!authReady) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          bgcolor: "background.default",
+        }}
+      >
+        <CircularProgress size={28} aria-label="Checking session" />
+      </Box>
+    );
+  }
 
   const drawer = <AppSidebar onNavigate={() => setMobileOpen(false)} />;
 
@@ -56,6 +75,7 @@ function AuthenticatedLayout() {
           <IconButton
             color="inherit"
             edge="start"
+            aria-label="Open navigation menu"
             onClick={() => setMobileOpen(true)}
             sx={{ mr: 2, display: { md: "none" }, color: "text.primary" }}
           >
