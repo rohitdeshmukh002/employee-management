@@ -17,6 +17,15 @@ export default defineConfig({
     preset: "node-server",
   },
   vite: {
+    environments: {
+      ssr: {
+        build: {
+          rollupOptions: {
+            input: "./src/server.ts",
+          },
+        },
+      },
+    },
     server: {
       host: "0.0.0.0",
       port: 5173,

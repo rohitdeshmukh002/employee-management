@@ -1,24 +1,11 @@
+import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
+
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-
-type ServerEntry = {
-  fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
-};
-
-let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 /** Backend origin for production /api proxy (Vite proxy only works in dev). */
 const API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000";
-
-async function getServerEntry(): Promise<ServerEntry> {
-  if (!serverEntryPromise) {
-    serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => (m.default ?? m) as ServerEntry,
-    );
-  }
-  return serverEntryPromise;
-}
 
 async function proxyApiRequest(request: Request): Promise<Response> {
   const incoming = new URL(request.url);
@@ -68,16 +55,15 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
-export default {
-  async fetch(request: Request, env: unknown, ctx: unknown) {
+export default createServerEntry({
+  async fetch(request) {
     const { pathname } = new URL(request.url);
     if (pathname.startsWith("/api")) {
       return proxyApiRequest(request);
     }
 
     try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
+      const response = await handler.fetch(request);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
@@ -87,4 +73,4 @@ export default {
       });
     }
   },
-};
+});

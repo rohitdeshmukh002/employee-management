@@ -26,5 +26,6 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 COPY --from=build /app/.output ./.output
+COPY --from=build /app/serve-prod.mjs ./serve-prod.mjs
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+CMD ["node", "serve-prod.mjs"]
